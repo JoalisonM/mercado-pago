@@ -12,6 +12,7 @@ itemsFields = {
 backUrlsFields = {
   "success": fields.String,
   "failure": fields.String,
+  "pending": fields.String,
 }
 
 payerFields = {

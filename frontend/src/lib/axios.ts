@@ -19,9 +19,9 @@ const err = (error: AxiosError) => {
 };
 
 api.interceptors.request.use((config) => {
-  // const key = import.meta.env.VITE_MERCADO_PAGO_SECRET_KEY;
-  // const token = `Bearer ${key}`;
-  // config.headers.Authorization = token;
+  const key = import.meta.env.VITE_MERCADO_PAGO_SECRET_KEY_DEV;
+  const token = `Bearer ${key}`;
+  config.headers.Authorization = token;
   if (config.headers["Content-Type"] === undefined) {
     config.headers["Content-Type"] = "application/json";
     config.headers.Accept = "application/json";

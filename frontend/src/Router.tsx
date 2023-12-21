@@ -12,8 +12,8 @@ export const Router = () => {
       <Route path="/" element={<DefaultLayout />}>
         <Route path="/" element={<ListProducts />} />
         <Route path="/product/:id" element={<Product />} />
-        <Route path="/product/:id/success" element={<PaymentSuccess />} />
-        <Route path="/product/:id/failure" element={<PaymentFailure />} />
+        <Route path="/success" element={<PaymentSuccess />} />
+        <Route path="/failure" element={<PaymentFailure />} />
       </Route>
     </Routes>
   );

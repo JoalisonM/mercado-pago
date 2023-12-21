@@ -16,6 +16,7 @@ type PreferenceProps = {
   back_urls: {
     success: string;
     failure: string;
+    pending: string;
   };
   date_created: string;
 }
@@ -26,6 +27,7 @@ type CreatePreferenceInput = {
   unit_price: number;
   success_url: string;
   failure_url: string;
+  pending_url: string;
 }
 
 export const useProducts = () => {

@@ -12,16 +12,18 @@ load_dotenv()
 
 parser = reqparse.RequestParser()
 
+# PREFERENCE
 parser.add_argument("id", type=int, help="Id não informado", required=False)
 parser.add_argument("title", type=str, help="Título não informado", required=False)
 parser.add_argument("unit_price", type=float, help="Preço unitário não informado", required=False)
 parser.add_argument("success_url", type=str, help="URL de sucesso não informada", required=False)
 parser.add_argument("failure_url", type=str, help="URL de falha não informada", required=False)
+parser.add_argument("pending_url", type=str, help="URL de pending não informada", required=False)
 parser.add_argument("payment_data", type=dict, help="payment_data não informado", required=False)
 
 class ProductPreference(Resource):
   def __init__(self):
-    self.mercadoPagoKey = os.getenv("MERCADO_PAGO_SECRET_KEY")
+    self.mercadoPagoKey = os.getenv("MERCADO_PAGO_SECRET_KEY_DEV")
     self.sdk = mercadopago.SDK(self.mercadoPagoKey)
 
   def post(self):
@@ -42,6 +44,7 @@ class ProductPreference(Resource):
         "back_urls": {
           "success": args["success_url"],
           "failure": args["failure_url"],
+          "pending": args["pending_url"],
         }
       }
 
@@ -55,7 +58,7 @@ class ProductPreference(Resource):
 
 class ProductPayment(Resource):
   def __init__(self):
-    self.mercadoPagoKey = os.getenv("MERCADO_PAGO_SECRET_KEY")
+    self.mercadoPagoKey = os.getenv("MERCADO_PAGO_SECRET_KEY_DEV")
     self.sdk = mercadopago.SDK(self.mercadoPagoKey)
     self.request_options = mercadopago.config.RequestOptions()
     self.request_options.custom_headers = {
@@ -65,10 +68,13 @@ class ProductPayment(Resource):
 
   def post(self):
     args = parser.parse_args()
-    payment_response = self.sdk.payment().create(args["payment_data"], self.request_options)
+
+    payment_data = args["payment_data"]
+
+    payment_response = self.sdk.payment().create(payment_data, self.request_options)
     payment = payment_response["response"]
 
     if(payment["status"] == "success"):
-      pass
+      logger.info("TRANSAÇÃO APROVADA!!!!!!!!")
 
-    return (payment, 200)
+    return payment

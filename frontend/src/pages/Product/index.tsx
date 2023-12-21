@@ -1,22 +1,33 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
+import { useEffect, useState, useRef } from "react";
+import * as Toast from '@radix-ui/react-toast';
+import { useLocation, useNavigate } from "react-router-dom";
+import { initMercadoPago, Payment, StatusScreen } from "@mercadopago/sdk-react";
 import { IPaymentFormData } from "@mercadopago/sdk-react/bricks/payment/type";
 
 import { Image } from "../../components/Image";
 import { useProducts } from "../../hooks/useProducts";
-import { ProductContent, ImageContainer, ProductContainer, ProductDetails } from "./styles";
+import { ProductContent, ImageContainer, ProductContainer, ProductDetails, ToastRoot, ToastViewport, StatusContainer } from "./styles";
+
+type PaymentType = {
+  id: string;
+}
 
 export const Product = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { id, name, price, imageUrl} = location.state;
-  const { createPayment, payment, createPreference, preference } = useProducts();
 
-  initMercadoPago(`${import.meta.env.VITE_MERCADO_PAGO_PUBIC_KEY}`, { locale: "pt-BR" });
+  const timerRef = useRef(0);
+
+  const [openPaymentStatus, setOpenPaymentStatus] = useState(false);
+  const [payment, setPayment] = useState<PaymentType | null>(null);
+  const { createPayment, createPreference, preference } = useProducts();
+
+  initMercadoPago(`${import.meta.env.VITE_MERCADO_PAGO_PUBIC_KEY_DEV}`, { locale: "pt-BR" });
 
   const initialization = preference && {
     amount: price,
-    preference: preference.id,
+    preferenceId: preference.id,
   };
 
   useEffect(() => {
@@ -24,58 +35,84 @@ export const Product = () => {
       id: id,
       title: name,
       unit_price: price,
-      success_url: `http://127.0.0.1:5173/product/${id}/success`,
-      failure_url: `http://127.0.0.1:5173/product/${id}/failure`,
+      success_url: `localhost:5173/success`,
+      failure_url: `localhost:5173/failure`,
+      pending_url: `localhost:5173/failure`,
     });
   }, [name, price, imageUrl]);
 
-  console.log("preference: ", preference);
+  useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
+
+  const onPaymentStatus = () => {
+    setOpenPaymentStatus(false);
+    window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setOpenPaymentStatus(true);
+    }, 100);
+
+  }
 
   const onSubmitProduct = async ({ formData }: IPaymentFormData) => {
-    console.log("formData: ", formData);
-    const response = await createPayment({
-      payment_data: formData
-    });
+    const response = await createPayment({ payment_data: formData});
+
 
     if(response) {
-      console.log("response: ", response);
-    }
+      setPayment(response);
 
-    // window.location.href = preference.back_urls.success;
+      onPaymentStatus();
+    }
   };
 
   return (
-    <ProductContainer>
-      <ProductContent>
-        <ImageContainer>
-          <Image imageUrl={imageUrl} />
-        </ImageContainer>
+    <>
+      <ProductContainer>
+        <ProductContent>
+          <ImageContainer>
+            <Image imageUrl={imageUrl} />
+          </ImageContainer>
 
-        <footer>
-          <strong>{name}</strong>
-          <span>
-            {
-              new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              }).format(price)
-            }
-          </span>
-        </footer>
-      </ProductContent>
-      <ProductDetails>
-        <Payment
-          initialization={initialization}
-          customization={{
-            enableReviewStep: true,
-            paymentMethods: {
-              bankTransfer: "all",
-              creditCard: "all",
-            },
-          }}
-          onSubmit={onSubmitProduct}
-        />
-      </ProductDetails>
-    </ProductContainer>
+          <footer>
+            <strong>{name}</strong>
+            <span>
+              {
+                new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                }).format(price)
+              }
+            </span>
+          </footer>
+        </ProductContent>
+        <ProductDetails>
+          <Payment
+            initialization={initialization}
+            customization={{
+              enableReviewStep: true,
+              paymentMethods: {
+                creditCard: "all",
+              },
+            }}
+            onSubmit={onSubmitProduct}
+          />
+        </ProductDetails>
+      </ProductContainer>
+
+      <Toast.Provider duration={8000}>
+        <ToastRoot open={openPaymentStatus} onOpenChange={setOpenPaymentStatus}>
+          <StatusContainer>
+            {payment && (
+              <StatusScreen
+                initialization={{
+                  paymentId: payment.id,
+                }}
+              />
+            )}
+          </StatusContainer>
+        </ToastRoot>
+        <ToastViewport />
+      </Toast.Provider>
+    </>
   );
 };
